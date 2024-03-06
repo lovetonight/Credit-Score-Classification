@@ -4,9 +4,15 @@ import pandas as pd
 from sklearn.metrics import f1_score, accuracy_score, fbeta_score, precision_score, recall_score
 from data.get_data import get_data
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
-X, y = get_data()
+X, y = get_data(flag=True)
+
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.8, stratify=y, random_state=42)
 
 
@@ -115,3 +121,19 @@ def distance_vector(theta):
         else:
             result +=2000
     return result
+
+def aaa(theta):
+    y_pred = predict(X_test, theta)
+    a = precision_recall_fscore_support(y_test, y_pred, average='macro')
+    cf = confusion_matrix(y_test, y_pred)
+    acc = accuracy_score(y_test, y_pred)
+    print(f'+ precision = {a[0]:.3f}')
+    print(f'+ recall = {a[1]:.3f}')
+    print(f'+ f1_score = {a[2]:.3f}')
+    print(f'+ accuracy = {acc:.3f}')
+
+    plt.figure(figsize=(8,6))
+    ax = sns.heatmap(data=cf, fmt="d", annot=True)
+    ax.set_xlabel("Predicted Labels")
+    ax.set_ylabel("True Labels")
+    plt.show()

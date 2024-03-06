@@ -1,7 +1,12 @@
 import pandas as pd
 
-def get_data():
+def transform_x52(value):
+    return -value
+
+def get_data(flag = False):
     df = pd.read_csv('../data/full_data.csv')
+    if flag is True:
+        df['x52'] = df['x52'].apply(transform_x52)
     addresses_ignore = []
     filtered_df = df[~df["address"].isin(addresses_ignore)]
     addresses = filtered_df["address"].values
