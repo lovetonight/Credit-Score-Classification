@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 X, y = get_data(flag=True)
 
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.8, stratify=y, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
 
 def labeling(scores): 
@@ -137,3 +137,26 @@ def aaa(theta):
     ax.set_xlabel("Predicted Labels")
     ax.set_ylabel("True Labels")
     plt.show()
+
+def save_to_file(theta):
+    y_pred = predict(X_test, theta)
+    a = precision_recall_fscore_support(y_test, y_pred, average='macro')
+    precision, recall, f1_score = a[:3]
+    confusion_matrix_result = confusion_matrix(y_test, y_pred)
+    acc = accuracy_score(y_test, y_pred)
+    
+    # Save metrics to file
+    with open("result/metrics_ga.txt", "w") as f:
+        f.write(f'+ precision = {precision:.3f}\n')
+        f.write(f'+ recall = {recall:.3f}\n')
+        f.write(f'+ f1_score = {f1_score:.3f}\n')
+        f.write(f'+ accuracy = {acc:.3f}\n')
+        
+
+    # Save confusion matrix plot to file
+    plt.figure(figsize=(8,6))
+    ax = sns.heatmap(data=confusion_matrix_result, fmt="d", annot=True)
+    ax.set_xlabel("Predicted Labels")
+    ax.set_ylabel("True Labels")
+    plt.savefig("result/confusion_matrix_ga.png")  # Save the plot to a file
+    plt.close()
