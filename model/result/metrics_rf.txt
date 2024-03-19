@@ -1,0 +1,4 @@
++ precision = 0.879
++ recall = 0.865
++ f1_score = 0.870
++ accuracy = 0.986
