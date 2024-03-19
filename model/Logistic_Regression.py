@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 X, y = get_data()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
-logistic_classifier = LogisticRegression(max_iter=1000)
+logistic_classifier = LogisticRegression(solver='lbfgs', max_iter=2000)
 logistic_classifier.fit(X_train, y_train)
 predictions = logistic_classifier.predict(X_test)
 accuracy = logistic_classifier.score(X_test, y_test)
@@ -25,7 +25,7 @@ precision, recall, f1_score, _ = precision_recall_fscore_support(y_test, predict
 confusion_matrix_result = confusion_matrix(y_test, predictions)
 
 # Save metrics to file
-with open("result/metrics_gb.txt", "w") as f:
+with open("result/metrics_logistic.txt", "w") as f:
     f.write(f'+ precision = {precision:.3f}\n')
     f.write(f'+ recall = {recall:.3f}\n')
     f.write(f'+ f1_score = {f1_score:.3f}\n')
