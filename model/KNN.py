@@ -9,8 +9,6 @@ from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-with open("test3.txt", "w") as f:
-    f.write("OK " )
 
 X, y = get_data()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)

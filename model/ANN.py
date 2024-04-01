@@ -25,8 +25,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratif
 # Model
 model = Sequential()
 # input shape
-model.add(Dense(10, activation='relu', input_shape=(16,)))
-# model.add(Dense(28, activation='relu'))
+model.add(Dense(20, activation='relu', input_shape=(16,)))
+model.add(Dense(10, activation='relu'))
 model.add(Dense(num_classes, activation='softmax'))
 
 # Process
@@ -59,4 +59,32 @@ ax = sns.heatmap(data=confusion_matrix_result, fmt="d", annot=True)
 ax.set_xlabel("Predicted Labels")
 ax.set_ylabel("True Labels")
 plt.savefig("result/confusion_matrix_ann.png")  # Save the plot to a file
-plt.close()
+# plt.close()
+
+
+# # Thử với các learning rate khác nhau (giữ nguyên các layer, node và activation function)
+# learning_rate = [0.1, 0.005, 0.01, 0.00001, 0.2]
+# colors = ['r', 'g', 'b', 'y', 'c']
+# for i, lr in enumerate(learning_rate):
+#     model = Sequential()
+    
+#     model.add(Dense(10, activation='relu', input_shape=(16,)))
+#     model.add(Dense(num_classes, activation='softmax'))
+
+#     model.compile(loss='categorical_crossentropy',
+#                     optimizer=Adam(learning_rate=lr),
+#                     metrics=['accuracy'])
+#     print('\nLearning rate = %f' %(lr))
+#     H = model.fit(X_train, y_train,
+#               batch_size=batch_size,
+#               epochs=epochs,
+#               verbose=1,  # log or not
+#               )
+#     plt.plot(H.history['accuracy'], colors[i])
+  
+# plt.title('Loss with Different Learning rates')
+# plt.legend(learning_rate)
+# plt.tight_layout()
+# plt.xlabel('Number of Epochs')
+# plt.ylabel('Accuracy')
+# plt.show()

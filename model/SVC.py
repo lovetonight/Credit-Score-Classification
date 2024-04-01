@@ -11,8 +11,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-with open("test.txt", "w") as f:
-    f.write("OK " )
 # Load data
 X, y = get_data()
 y = np.reshape(y, (-1, 1))

@@ -52,11 +52,9 @@ for generation_id in range(num_generations):
     # print(f'generation {generation_id}: accuracy: {final_accuracy.mean()}, fitness:{rankedsolutions[0][0]}, f1_score;{valuate_f1_score(theta)}')
     list_high_fitness.append(rankedsolutions[0][0])
     
-    # if rankedsolutions[0][0] >=0.8:
-    #     break
 
     bestSolutions = rankedsolutions[:20] + rankedsolutions[-5:]
-
+    print(bestSolutions)
     newGen = [rankedsolutions[0][1]]
     for _ in range(num_solutions-1):
         # Crossover
@@ -70,7 +68,6 @@ for generation_id in range(num_generations):
         normalized_mutated_child1 = normalize_theta(mutated_child1)
         newGen.append(normalized_mutated_child1)
     solutions = newGen
-print(1)
   
 theta=np.array(solutions[0])
 save_to_file(theta)
