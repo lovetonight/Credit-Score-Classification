@@ -6,10 +6,10 @@ import numpy as np
 
 
 def get_30_value_from_dict(dict_data):
-    if dict_data is None:
+    if dict_data is None or len(dict_data) == 0:
         return None
     sorted_data = sorted(dict_data.items(), key=lambda x: x[0], reverse=True)
-    top_30_keys = [item[0] for item in sorted_data[:30]]
+    top_30_keys = [item[0] for item in sorted_data[: min(30, len(sorted_data))]]
     top_30_values = [dict_data[key] for key in top_30_keys]
     array_values = np.array(top_30_values)
     return np.mean(array_values)
@@ -33,26 +33,10 @@ db = client["knowledge_graph"]
 collection = db["wallets"]
 
 # depositors
-df = pd.read_csv("full_data.csv")
-tmp_df = df[["address", "label"]]
-depositers, labels = df["address"], df["label"]
+df = pd.read_csv("all_data.csv")
+depositers = df["address"]
 depositers = ["0x1_" + depositer for depositer in depositers]
 
-# filter
-# end_words = [
-#     "Logs",
-#     "tokens",
-#     "Tokens",
-#     "elite",
-#     "selective",
-#     "writingLock",
-#     "lendings",
-#     "flagged",
-#     "isNew",
-#     "At",
-# ]
-# regex_pattern = "|".join(map(re.escape, end_words))
-# regex = re.compile(f".*(?:{regex_pattern})$")
 
 projection = {
     "address": 1,
@@ -66,7 +50,8 @@ projection = {
     "numberOfInteractedDapps": 1,
     "numberOfReputableDapps": 1,
     "typesOfInteractedDapps": 1,
-    "tokens": 1,
+    "borrowChangeLogs": 1,
+    "depositChangeLogs": 1,
     "balanceChangeLogs": 1,
     "dailyNumberOfTransactions": 1,
     "dailyTransactionAmounts": 1,
@@ -76,27 +61,28 @@ projection = {
 filter = {"_id": {"$in": depositers}}
 cursor = collection.find(filter, projection)
 
-
 list_data = []
 cursor = list(cursor)
 for i in range(len(cursor)):
-    cursor[i]["averageTotalAsset"] = (
-        get_30_value_from_dict(cursor[i]["balanceChangeLogs"])
-        if cursor[i].get("balanceChangeLogs") is not None
-        else None
-    )
-    #
+    ##
     cursor[i]["frequencyOfTransaction"] = (
         get_30_value_from_dict(cursor[i]["dailyNumberOfTransactions"])
         if cursor[i].get("dailyNumberOfTransactions") is not None
         else None
     )
-
     #
-    cursor[i]["numberCallsTopContracts"] = (
-        get_30_value_from_dict(cursor[i]["numberCallsTopContracts"])
-        if cursor[i].get("numberCallsTopContracts") is not None
-        else 0
+    # cursor[i]["frequencyCallsTopContracts"] = (
+    #     get_30_value_from_dict(cursor[i]["numberCallsTopContracts"])
+    #     if cursor[i].get("numberCallsTopContracts") is not None
+    #     else 0
+    # )
+    #
+    cursor[i]["totalAsset"] = (
+        cursor[i]["balanceInUSD"] + cursor[i]["depositInUSD"] - cursor[i]["borrowInUSD"]
+        if cursor[i].get("balanceInUSD") is not None
+        and cursor[i].get("depositInUSD") is not None
+        and cursor[i].get("borrowInUSD") is not None
+        else None
     )
     #
     cursor[i]["frequencyMountOfTransaction"] = get_30_value_from_dict(
@@ -104,37 +90,36 @@ for i in range(len(cursor)):
         if cursor[i].get("dailyTransactionAmounts") is not None
         else None
     )
-    #
-    # cursor[i]["loanToBalance"] = (
-    #     cursor[i]["borrowInUSD"] / cursor[i]["balanceInUSD"]
-    #     if cursor[i]["balanceInUSD"] != 0
-    #     else 0
+    ##
+    cursor[i]["averageBalance"] = (
+        get_30_value_from_dict(cursor[i]["balanceChangeLogs"])
+        if cursor[i].get("balanceChangeLogs") is not None
+        else None
+    )
+    # avg_borrow = get_30_value_from_dict(
+    #     cursor[i]["borrowChangeLogs"] if cursor[i].get("borrowChangeLogs") is not None else None
     # )
-    # #
-    # cursor[i]["loanToInvestment"] = (
-    #     cursor[i]["borrowInUSD"] / cursor[i]["depositInUSD"]
-    #     if cursor[i]["depositInUSD"] != 0
-    #     else 0
+    # avg_deposit = get_30_value_from_dict(
+    #     cursor[i]["depositChangeLogs"] if cursor[i].get("depositChangeLogs") is not None else None
     # )
-    # #
-    # cursor[i]["investmentToBalance"] = (
-    #     cursor[i]["depositInUSD"] / cursor[i]["balanceInUSD"]
-    #     if cursor[i]["balanceInUSD"] != 0 
-    #     else 0
-    # )
+
+
 new_df = pd.DataFrame(cursor)
 
 delete_column = [
+    "_id",
     "balanceChangeLogs",
+    "depositChangeLogs",
+    "borrowChangeLogs",
     "dailyNumberOfTransactions",
     "dailyTransactionAmounts",
+    "numberCallsTopContracts"
 ]
 for col in delete_column:
     new_df = new_df.drop(col, axis=1)
 
 # Merge & write to csv file
-# df_final = pd.merge(new_df, tmp_df, on="address")
-# csv_file_path = "all_data.csv"
-# df_final.to_csv(csv_file_path, index=False)
-with open('tmp.json', 'w') as f:
-    json.dump(cursor, f, indent=4)
+csv_file_path = "all_data_10_5.csv"
+new_df.to_csv(csv_file_path, index=False)
+# with open("tmp.json", "w") as f:
+#     json.dump(cursor, f, indent=4)
