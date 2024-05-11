@@ -3,71 +3,211 @@ import pandas as pd
 import numpy as np
 
 
-def read_data(flag):
-    if flag == 0:
-        df = pd.read_csv("./data/full_wallet_data_0.csv")
-    if flag == 1:
-        df = pd.read_csv("./data/full_wallet_data_1.csv")
-    # df = pd.read_csv("./data/all_data.csv")
+def custom_nomalization(
+    df, column, min_threshold=None, max_threshold=None, zero=True, reverse=False
+):
+    if zero:
+        df_filtered = df[df[column] != 0]
+    else:
+        df_filtered = df
+    if min_threshold is not None:
+        min_val = df_filtered[column].quantile(min_threshold)
+    else:
+        min_val = 0
+    max_val = df_filtered[column].quantile(max_threshold)
+    if not reverse:
+        df.loc[df[column] < min_val, column] = 300
+        df.loc[df[column] > max_val, column] = 850
+        df.loc[(df[column] >= min_val) & (df[column] <= max_val), column] = (
+            (df[column] - min_val) / (max_val - min_val)
+        ) * 550 + 300
+    else:
+        df.loc[df[column] < min_val, column] = 850
+        df.loc[df[column] > max_val, column] = 300
+        df.loc[(df[column] >= min_val) & (df[column] <= max_val), column] = (
+            (max_val - df[column]) / (max_val - min_val)
+        ) * 550 + 300
+    return df
+
+
+def read_data():
+    df = pd.read_csv("./data/all_data_10_5.csv")
+    df = df.dropna()
+    df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0
+    df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0
+    df.loc[df["depositInUSD"] < 0.005, "depositInUSD"] = 0
+
     df["borrow_per_balance"] = np.where(
         df["balanceInUSD"] == 0, 0, df["borrowInUSD"] / df["balanceInUSD"]
-    )
-    df["deposit_per_balance"] = np.where(
-        df["balanceInUSD"] == 0, 0, df["depositInUSD"] / df["balanceInUSD"]
     )
     df["borrow_per_deposit"] = np.where(
         df["depositInUSD"] == 0, 0, df["borrowInUSD"] / df["depositInUSD"]
     )
-    # df["avg_liquidation"] = np.where(
-    #     (df["totalValueOfLiquidation"] == 0) | (df["numberOfLiquidation"] == 0),
-    #     0,
-    #     df["totalValueOfLiquidation"] / df["numberOfLiquidation"],
-    # )
+    df["averageTotalAsset"] = (
+        df["averageBalance"] + df["depositInUSD"] - df["borrowInUSD"]
+    )
+    df["deposit_per_asset"] = np.where(
+        df["totalAsset"] == 0, 0, df["depositInUSD"] / df["totalAsset"]
+    )
     current_timestamp = datetime.now()
     df["createdAt"] = pd.to_datetime(df["createdAt"])
     df["age"] = (current_timestamp - df["createdAt"]).dt.total_seconds()
-    # min_value = df['createdAt'].min()
-    # max_value = df['createdAt'].max()
-    # df = df.copy()
-    # df['age'] = (df['createdAt'] - min_value) * (1000 - 0) / (max_value - min_value) + 0
 
     # Drop column
-    df = (
-        df.drop("_id", axis=1)
-        .drop("depositInUSD", axis=1)
+    df_normalized = (
+        df.drop("depositInUSD", axis=1)
         .drop("borrowInUSD", axis=1)
-        .drop("numberCallsTopContracts", axis=1)
-        # .drop("avg_liquidation", axis=1)
+        .drop("balanceInUSD", axis=1)
+        .drop("createdAt", axis=1)
+        .drop("averageBalance", axis=1)
+        .drop("address", axis=1)
     )
-    return df
+
+    df_normalized = df_normalized[
+        ~(
+            (df_normalized["frequencyOfTransaction"] == 0)
+            & (df_normalized["frequencyMountOfTransaction"] > 0)
+        )
+    ]
+    df_normalized = df_normalized[df_normalized >= 0]
+    main_label_column = df["1st_label"]
+    sub_label_column = df["2nd_label"]
+
+    reverse_min_max_columns = [
+        "numberOfLiquidation",
+        "totalValueOfLiquidation",
+    ]
+
+    # totalAsset
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="totalAsset",
+        zero=False,
+        min_threshold=0.25,
+        max_threshold=0.95,
+        reverse=False,
+    )
+    # averageTotalAsset
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="averageTotalAsset",
+        zero=False,
+        min_threshold=0.25,
+        max_threshold=0.95,
+        reverse=False,
+    )
+
+    # frequencyOfDappTransactions
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="frequencyOfDappTransactions",
+        zero=False,
+        max_threshold=0.97,
+        reverse=False,
+    )
+    # numberOfInteractedDapps
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="numberOfInteractedDapps",
+        zero=False,
+        max_threshold=0.98,
+        reverse=False,
+    )
+    # typesOfInteractedDapps
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="typesOfInteractedDapps",
+        zero=False,
+        max_threshold=0.99,
+        reverse=False,
+    )
+    # numberOfReputableDapps
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="numberOfReputableDapps",
+        zero=False,
+        max_threshold=0.99,
+        reverse=False,
+    )
+
+    # frequencyMountOfTransaction
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="frequencyMountOfTransaction",
+        zero=True,
+        min_threshold=0.24,
+        max_threshold=0.94,
+        reverse=False,
+    )
+    # frequencyOfTransaction
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="frequencyOfTransaction",
+        zero=True,
+        max_threshold=0.96,
+        reverse=False,
+    )
+    # age
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="age",
+        zero=False,
+        min_threshold=0.05,
+        max_threshold=0.95,
+        reverse=False,
+    )
+    # numberOfLiquidation
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="numberOfLiquidation",
+        zero=True,
+        max_threshold=0.98,
+        reverse=True,
+    )
+    # totalValueOfLiquidation
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="totalValueOfLiquidation",
+        zero=True,
+        max_threshold=0.77,
+        reverse=True,
+    )
+    # borrow_per_balance
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="borrow_per_balance",
+        zero=True,
+        min_threshold=0.04,
+        max_threshold=0.86,
+        reverse=False,
+    )
+    # borrow_per_deposit
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="borrow_per_deposit",
+        zero=True,
+        min_threshold=0.08,
+        max_threshold=0.85,
+        reverse=False,
+    )
+    # deposit_per_asset
+    df_normalized = custom_nomalization(
+        df=df_normalized,
+        column="deposit_per_asset",
+        zero=False,
+        min_threshold=0.3,
+        max_threshold=0.86,
+        reverse=False,
+    )
+
+    df_normalized["1st_label"] = main_label_column
+    df_normalized["2nd_label"] = sub_label_column
+    return df_normalized
 
 
 def read_data_no_outlier(flag, flag_outlier=None):
-    df = read_data(flag)
+    df = read_data()
     df = df.dropna()
-    # Balance outlier
     # Sử dụng z-score 1
-    label_value_in_usd = [
-        "balanceInUSD",
-        "totalValueOfLiquidation",
-        "averageTotalAsset",
-        "frequencyMountOfTransaction",
-        "borrow_per_balance",
-        "deposit_per_balance",
-        "borrow_per_deposit",
-    ]
     # If flag_outlier is None, calculate outlier with all field
-    if flag_outlier == None:
-        for label in label_value_in_usd:
-
-            df["zscore"] = (df[label] - df[label].mean()) / df[label].std()
-            df = df[df["zscore"] < 1]
-    else:
-        df["zscore"] = (df["balanceInUSD"] - df["balanceInUSD"].mean()) / df[
-            "balanceInUSD"
-        ].std()
-        df = df[df["zscore"] < 1]
     return df
-
-
-# read_data_no_outlier()
