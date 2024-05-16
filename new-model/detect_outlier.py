@@ -16,15 +16,15 @@ def custom_nomalization(
         min_val = 0
     max_val = df_filtered[column].quantile(max_threshold)
     if not reverse:
-        df.loc[df[column] < min_val, column] = 300
-        df.loc[df[column] > max_val, column] = 850
-        df.loc[(df[column] >= min_val) & (df[column] <= max_val), column] = (
+        df.loc[df[column] <= min_val, column] = 300
+        df.loc[df[column] >= max_val, column] = 850
+        df.loc[(df[column] > min_val) & (df[column] < max_val), column] = (
             (df[column] - min_val) / (max_val - min_val)
         ) * 550 + 300
     else:
-        df.loc[df[column] < min_val, column] = 850
-        df.loc[df[column] > max_val, column] = 300
-        df.loc[(df[column] >= min_val) & (df[column] <= max_val), column] = (
+        df.loc[df[column] <= min_val, column] = 850
+        df.loc[df[column] >= max_val, column] = 300
+        df.loc[(df[column] > min_val) & (df[column] < max_val), column] = (
             (max_val - df[column]) / (max_val - min_val)
         ) * 550 + 300
     return df
@@ -36,7 +36,7 @@ def read_data():
     df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0
     df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0
     df.loc[df["depositInUSD"] < 0.005, "depositInUSD"] = 0
-
+    df.loc[df["balanceInUSD"] < 0.005, "balanceInUSD"] = 0.0
     df["borrow_per_balance"] = np.where(
         df["balanceInUSD"] == 0, 0, df["borrowInUSD"] / df["balanceInUSD"]
     )
@@ -211,3 +211,46 @@ def read_data_no_outlier(flag, flag_outlier=None):
     # Sử dụng z-score 1
     # If flag_outlier is None, calculate outlier with all field
     return df
+
+
+def read_data_without_nomalize():
+    df = pd.read_csv("./data/all_data_10_5.csv")
+    df = df.dropna()
+    df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0.0
+    df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0.0
+    df.loc[df["depositInUSD"] < 0.005, "depositInUSD"] = 0.0
+    df.loc[df["balanceInUSD"] < 0.005, "balanceInUSD"] = 0.0
+    df["borrow_per_balance"] = np.where(
+        df["balanceInUSD"] == 0, 0, df["borrowInUSD"] / df["balanceInUSD"]
+    )
+    df["borrow_per_deposit"] = np.where(
+        df["depositInUSD"] == 0, 0, df["borrowInUSD"] / df["depositInUSD"]
+    )
+    df["averageTotalAsset"] = (
+        df["averageBalance"] + df["depositInUSD"] - df["borrowInUSD"]
+    )
+    df["deposit_per_asset"] = np.where(
+        df["totalAsset"] == 0, 0, df["depositInUSD"] / df["totalAsset"]
+    )
+    current_timestamp = datetime.now()
+    df["createdAt"] = pd.to_datetime(df["createdAt"])
+    df["age"] = (current_timestamp - df["createdAt"]).dt.total_seconds()
+
+    # Drop column
+    df_normalized = (
+        df.drop("address", axis=1)
+        .drop("balanceInUSD", axis=1)
+        .drop("depositInUSD", axis=1)
+        .drop("borrowInUSD", axis=1)
+        .drop("createdAt", axis=1)
+        .drop("averageBalance", axis=1)
+    )
+
+    df_normalized = df_normalized[
+        ~(
+            (df_normalized["frequencyOfTransaction"] == 0)
+            & (df_normalized["frequencyMountOfTransaction"] > 0)
+        )
+    ]
+    df_normalized = df_normalized[df_normalized >= 0]
+    return df_normalized
