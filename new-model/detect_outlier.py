@@ -3,35 +3,30 @@ import pandas as pd
 import numpy as np
 
 
-def custom_nomalization(
+def custom_normalization(
     df, column, min_threshold=None, max_threshold=None, zero=True, reverse=False
 ):
-    if zero:
-        df_filtered = df[df[column] != 0]
-    else:
-        df_filtered = df
-    if min_threshold is not None:
-        min_val = df_filtered[column].quantile(min_threshold)
-    else:
-        min_val = 0
+    def transform_score(value, min_val, max_val, reverse):
+        if value <= min_val:
+            return 850 if reverse else 300
+        elif value >= max_val:
+            return 300 if reverse else 850
+        else:
+            scale = (max_val - value) if reverse else (value - min_val)
+            return (scale / (max_val - min_val)) * 550 + 300
+
+    df_filtered = df[df[column] != 0] if zero else df
+    min_val = (
+        df_filtered[column].quantile(min_threshold) if min_threshold is not None else 0
+    )
     max_val = df_filtered[column].quantile(max_threshold)
-    if not reverse:
-        df.loc[df[column] <= min_val, column] = 300
-        df.loc[df[column] >= max_val, column] = 850
-        df.loc[(df[column] > min_val) & (df[column] < max_val), column] = (
-            (df[column] - min_val) / (max_val - min_val)
-        ) * 550 + 300
-    else:
-        df.loc[df[column] <= min_val, column] = 850
-        df.loc[df[column] >= max_val, column] = 300
-        df.loc[(df[column] > min_val) & (df[column] < max_val), column] = (
-            (max_val - df[column]) / (max_val - min_val)
-        ) * 550 + 300
+
+    df[column] = df[column].apply(transform_score, args=(min_val, max_val, reverse))
     return df
 
 
 def read_data():
-    df = pd.read_csv("./data/all_data_10_5.csv")
+    df = pd.read_csv("./data/all_data_10_5[2].csv")
     df = df.dropna()
     df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0
     df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0
@@ -73,13 +68,8 @@ def read_data():
     main_label_column = df["1st_label"]
     sub_label_column = df["2nd_label"]
 
-    reverse_min_max_columns = [
-        "numberOfLiquidation",
-        "totalValueOfLiquidation",
-    ]
-
     # totalAsset
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="totalAsset",
         zero=False,
@@ -88,7 +78,7 @@ def read_data():
         reverse=False,
     )
     # averageTotalAsset
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="averageTotalAsset",
         zero=False,
@@ -98,7 +88,7 @@ def read_data():
     )
 
     # frequencyOfDappTransactions
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="frequencyOfDappTransactions",
         zero=False,
@@ -106,7 +96,7 @@ def read_data():
         reverse=False,
     )
     # numberOfInteractedDapps
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="numberOfInteractedDapps",
         zero=False,
@@ -114,7 +104,7 @@ def read_data():
         reverse=False,
     )
     # typesOfInteractedDapps
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="typesOfInteractedDapps",
         zero=False,
@@ -122,7 +112,7 @@ def read_data():
         reverse=False,
     )
     # numberOfReputableDapps
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="numberOfReputableDapps",
         zero=False,
@@ -131,7 +121,7 @@ def read_data():
     )
 
     # frequencyMountOfTransaction
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="frequencyMountOfTransaction",
         zero=True,
@@ -140,7 +130,7 @@ def read_data():
         reverse=False,
     )
     # frequencyOfTransaction
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="frequencyOfTransaction",
         zero=True,
@@ -148,7 +138,7 @@ def read_data():
         reverse=False,
     )
     # age
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="age",
         zero=False,
@@ -157,7 +147,7 @@ def read_data():
         reverse=False,
     )
     # numberOfLiquidation
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="numberOfLiquidation",
         zero=True,
@@ -165,7 +155,7 @@ def read_data():
         reverse=True,
     )
     # totalValueOfLiquidation
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="totalValueOfLiquidation",
         zero=True,
@@ -173,25 +163,25 @@ def read_data():
         reverse=True,
     )
     # borrow_per_balance
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="borrow_per_balance",
         zero=True,
-        min_threshold=0.04,
-        max_threshold=0.86,
-        reverse=False,
+        min_threshold=0.36,
+        max_threshold=0.77,
+        reverse=True,
     )
     # borrow_per_deposit
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="borrow_per_deposit",
         zero=True,
         min_threshold=0.08,
         max_threshold=0.85,
-        reverse=False,
+        reverse=True,
     )
     # deposit_per_asset
-    df_normalized = custom_nomalization(
+    df_normalized = custom_normalization(
         df=df_normalized,
         column="deposit_per_asset",
         zero=False,
@@ -203,14 +193,6 @@ def read_data():
     df_normalized["1st_label"] = main_label_column
     df_normalized["2nd_label"] = sub_label_column
     return df_normalized
-
-
-def read_data_no_outlier(flag, flag_outlier=None):
-    df = read_data()
-    df = df.dropna()
-    # Sử dụng z-score 1
-    # If flag_outlier is None, calculate outlier with all field
-    return df
 
 
 def read_data_without_nomalize():
