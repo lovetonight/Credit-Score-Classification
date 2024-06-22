@@ -26,8 +26,10 @@ def custom_normalization(
 
 
 def read_data():
-    df = pd.read_csv("./data/all_data_10_5[2].csv")
+    df = pd.read_csv("./data/all_data_10_5[2][3].csv")
     df = df.dropna()
+    df = df[df["depositInUSD"] > df["borrowInUSD"]]
+    df = df[df["totalAsset"] > 10]
     df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0
     df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0
     df.loc[df["depositInUSD"] < 0.005, "depositInUSD"] = 0
@@ -44,9 +46,8 @@ def read_data():
     df["deposit_per_asset"] = np.where(
         df["totalAsset"] == 0, 0, df["depositInUSD"] / df["totalAsset"]
     )
-    current_timestamp = datetime.now()
-    df["createdAt"] = pd.to_datetime(df["createdAt"])
-    df["age"] = (current_timestamp - df["createdAt"]).dt.total_seconds()
+    current_timestamp = int(datetime.now().timestamp())
+    df["age"] = (current_timestamp - df["createdAt"]).astype(int)
 
     # Drop column
     df_normalized = (
@@ -56,6 +57,7 @@ def read_data():
         .drop("createdAt", axis=1)
         .drop("averageBalance", axis=1)
         .drop("address", axis=1)
+        .drop("numberOfReputableDapps", axis=1)
     )
 
     df_normalized = df_normalized[
@@ -73,7 +75,7 @@ def read_data():
         df=df_normalized,
         column="totalAsset",
         zero=False,
-        min_threshold=0.25,
+        # min_threshold=0.25,
         max_threshold=0.95,
         reverse=False,
     )
@@ -82,7 +84,7 @@ def read_data():
         df=df_normalized,
         column="averageTotalAsset",
         zero=False,
-        min_threshold=0.25,
+        # min_threshold=0.25,
         max_threshold=0.95,
         reverse=False,
     )
@@ -91,42 +93,42 @@ def read_data():
     df_normalized = custom_normalization(
         df=df_normalized,
         column="frequencyOfDappTransactions",
-        zero=False,
-        max_threshold=0.97,
+        zero=True,
+        max_threshold=0.95,
         reverse=False,
     )
     # numberOfInteractedDapps
     df_normalized = custom_normalization(
         df=df_normalized,
         column="numberOfInteractedDapps",
-        zero=False,
-        max_threshold=0.98,
+        zero=True,
+        max_threshold=0.95,
         reverse=False,
     )
     # typesOfInteractedDapps
     df_normalized = custom_normalization(
         df=df_normalized,
         column="typesOfInteractedDapps",
-        zero=False,
+        zero=True,
         max_threshold=0.99,
         reverse=False,
     )
-    # numberOfReputableDapps
-    df_normalized = custom_normalization(
-        df=df_normalized,
-        column="numberOfReputableDapps",
-        zero=False,
-        max_threshold=0.99,
-        reverse=False,
-    )
+    # # numberOfReputableDapps
+    # df_normalized = custom_normalization(
+    #     df=df_normalized,
+    #     column="numberOfReputableDapps",
+    #     zero=True,
+    #     max_threshold=0.99,
+    #     reverse=False,
+    # )
 
     # frequencyMountOfTransaction
     df_normalized = custom_normalization(
         df=df_normalized,
         column="frequencyMountOfTransaction",
         zero=True,
-        min_threshold=0.24,
-        max_threshold=0.94,
+        # min_threshold=0.24,
+        max_threshold=0.95,
         reverse=False,
     )
     # frequencyOfTransaction
@@ -134,7 +136,7 @@ def read_data():
         df=df_normalized,
         column="frequencyOfTransaction",
         zero=True,
-        max_threshold=0.96,
+        max_threshold=0.98,
         reverse=False,
     )
     # age
@@ -185,8 +187,8 @@ def read_data():
         df=df_normalized,
         column="deposit_per_asset",
         zero=False,
-        min_threshold=0.3,
-        max_threshold=0.86,
+        # min_threshold=0.3,
+        max_threshold=0.95,
         reverse=False,
     )
 
@@ -196,8 +198,10 @@ def read_data():
 
 
 def read_data_without_nomalize():
-    df = pd.read_csv("./data/all_data_10_5.csv")
+    df = pd.read_csv("./data/all_data_10_5[2][3].csv")
     df = df.dropna()
+    df = df[df["depositInUSD"] > df["borrowInUSD"]]
+    df = df[df["totalAsset"] > 10]
     df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0.0
     df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0.0
     df.loc[df["depositInUSD"] < 0.005, "depositInUSD"] = 0.0
@@ -214,9 +218,8 @@ def read_data_without_nomalize():
     df["deposit_per_asset"] = np.where(
         df["totalAsset"] == 0, 0, df["depositInUSD"] / df["totalAsset"]
     )
-    current_timestamp = datetime.now()
-    df["createdAt"] = pd.to_datetime(df["createdAt"])
-    df["age"] = (current_timestamp - df["createdAt"]).dt.total_seconds()
+    current_timestamp = int(datetime.now().timestamp())
+    df["age"] = (current_timestamp - df["createdAt"]).astype(int)
 
     # Drop column
     df_normalized = (
@@ -226,6 +229,7 @@ def read_data_without_nomalize():
         .drop("borrowInUSD", axis=1)
         .drop("createdAt", axis=1)
         .drop("averageBalance", axis=1)
+        .drop("numberOfReputableDapps", axis=1)
     )
 
     df_normalized = df_normalized[
