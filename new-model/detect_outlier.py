@@ -26,10 +26,10 @@ def custom_normalization(
 
 
 def read_data():
-    df = pd.read_csv("./data/all_data_10_5[2][3].csv")
+    df = pd.read_csv("./data/Lending-Data-Ethereum-Labeled.csv")
     df = df.dropna()
     df = df[df["depositInUSD"] > df["borrowInUSD"]]
-    df = df[df["totalAsset"] > 10]
+    df = df[df["totalAsset"] >= 10]
     df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0
     df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0
     df.loc[df["depositInUSD"] < 0.005, "depositInUSD"] = 0
@@ -57,7 +57,7 @@ def read_data():
         .drop("createdAt", axis=1)
         .drop("averageBalance", axis=1)
         .drop("address", axis=1)
-        .drop("numberOfReputableDapps", axis=1)
+        # .drop("numberOfReputableDapps", axis=1)
     )
 
     df_normalized = df_normalized[
@@ -110,17 +110,17 @@ def read_data():
         df=df_normalized,
         column="typesOfInteractedDapps",
         zero=True,
+        max_threshold=0.95,
+        reverse=False,
+    )
+    # numberOfReputableDapps
+    df_normalized = custom_normalization(
+        df=df_normalized,
+        column="numberOfReputableDapps",
+        zero=True,
         max_threshold=0.99,
         reverse=False,
     )
-    # # numberOfReputableDapps
-    # df_normalized = custom_normalization(
-    #     df=df_normalized,
-    #     column="numberOfReputableDapps",
-    #     zero=True,
-    #     max_threshold=0.99,
-    #     reverse=False,
-    # )
 
     # frequencyMountOfTransaction
     df_normalized = custom_normalization(
@@ -128,7 +128,7 @@ def read_data():
         column="frequencyMountOfTransaction",
         zero=True,
         # min_threshold=0.24,
-        max_threshold=0.95,
+        max_threshold=0.99,
         reverse=False,
     )
     # frequencyOfTransaction
@@ -169,8 +169,8 @@ def read_data():
         df=df_normalized,
         column="borrow_per_balance",
         zero=True,
-        min_threshold=0.36,
-        max_threshold=0.77,
+        # min_threshold=0.36,
+        max_threshold=0.95,
         reverse=True,
     )
     # borrow_per_deposit
@@ -178,8 +178,8 @@ def read_data():
         df=df_normalized,
         column="borrow_per_deposit",
         zero=True,
-        min_threshold=0.08,
-        max_threshold=0.85,
+        min_threshold=0.05,
+        max_threshold=0.95,
         reverse=True,
     )
     # deposit_per_asset
@@ -198,10 +198,10 @@ def read_data():
 
 
 def read_data_without_nomalize():
-    df = pd.read_csv("./data/all_data_10_5[2][3].csv")
+    df = pd.read_csv("./data/Lending-Data-Ethereum-Labeled.csv")
     df = df.dropna()
     df = df[df["depositInUSD"] > df["borrowInUSD"]]
-    df = df[df["totalAsset"] > 10]
+    df = df[df["totalAsset"] >= 10]
     df.loc[df["borrowInUSD"] < 0.005, "borrowInUSD"] = 0.0
     df.loc[df["totalAsset"] < 0.005, "totalAsset"] = 0.0
     df.loc[df["depositInUSD"] < 0.005, "depositInUSD"] = 0.0
@@ -229,7 +229,7 @@ def read_data_without_nomalize():
         .drop("borrowInUSD", axis=1)
         .drop("createdAt", axis=1)
         .drop("averageBalance", axis=1)
-        .drop("numberOfReputableDapps", axis=1)
+        # .drop("numberOfReputableDapps", axis=1)
     )
 
     df_normalized = df_normalized[

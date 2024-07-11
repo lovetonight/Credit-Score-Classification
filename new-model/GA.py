@@ -2,7 +2,7 @@ import random
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-def nomal(arr):
+def normal(arr):
     sum = np.sum(arr)
     arr = arr / sum
     return arr
@@ -25,7 +25,7 @@ class Genetic_Alogorithm:
             self.second_y_train,
             self.second_y_test,
         ) = train_test_split(
-            X, first_y, second_y, test_size=0.2, stratify=first_y, random_state=40
+            X, first_y, second_y, test_size=0.2, stratify=second_y, random_state=40
         )
 
     def initialize_solutions(self):
@@ -33,7 +33,7 @@ class Genetic_Alogorithm:
         for _ in range(self.num_solutions):
             # Sử dụng np.random.uniform để khởi tạo giá trị trong khoảng từ -500 đến 500
             solution = np.random.uniform(0, 1, size=self.num_params)
-            solutions.append(tuple(nomal(solution)))
+            solutions.append(tuple(normal(solution)))
         return solutions
 
     def mutate(self, child, mutation_rate):
@@ -61,7 +61,7 @@ class Genetic_Alogorithm:
                 + list(parent2[crossover_point1:crossover_point2])
                 + list(parent1[crossover_point2:])
             )
-            return tuple(nomal(child))
+            return tuple(normal(child))
         elif type == "mean":
             child = [(parent1[i] + parent2[i]) / 2 for i in range(len(parent1))]
             return tuple(child)
@@ -81,12 +81,11 @@ class Genetic_Alogorithm:
             )
             child1 = self.crossover(parent1, parent2, crossover)
             child1 = self.mutate(child1, mutate_rate)
-            new_solution.append(nomal(child1))
+            new_solution.append(normal(child1))
         return new_solution, rankedsolutions[0][0]
 
     # support funcion
     def fitness(self, theta):
-        result = 0
         y_pred = self.predict(self.X_train, theta)
         return self.accuracy_score(self.first_y_train, self.second_y_train, y_pred)
 
@@ -100,7 +99,7 @@ class Genetic_Alogorithm:
         return accuracy
 
     def predict(self, matrices, theta):
-        list_scores = np.dot(matrices, theta)
+        list_scores = np.round(np.dot(matrices, theta)).astype(int)
         label = []
         for score in list_scores:
             if score < 580:

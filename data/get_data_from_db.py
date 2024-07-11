@@ -119,7 +119,7 @@ for col in delete_column:
     new_df = new_df.drop(col, axis=1)
 
 # Merge & write to csv file
-csv_file_path = "all_data_10_5.csv"
+csv_file_path = "Lending-Data-Ethereum.csv"
 new_df.to_csv(csv_file_path, index=False)
 # with open("tmp.json", "w") as f:
 #     json.dump(cursor, f, indent=4)
