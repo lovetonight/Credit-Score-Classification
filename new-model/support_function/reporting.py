@@ -58,7 +58,7 @@ def heat_map(input_dict):
     plt.show()
 
 def reporting(first_label, second_label, pred_label):
-    count = defaultdict(int)  #  key: pair label, value: number of accuracy pred_label
+    count = {}  #  key: pair label, value: number of accuracy pred_label
     count2 = defaultdict(int)  # key: pair label, value: total number of pair_label
     count3 = defaultdict(
         lambda: defaultdict(int)
@@ -67,12 +67,12 @@ def reporting(first_label, second_label, pred_label):
     # Xác định các cặp label
 
     for i in range(len(first_label)):
-
         pair = (
             min(first_label[i], second_label[i]),
             max(first_label[i], second_label[i]),
         )
-
+        if count.get(pair) is None: 
+            count[pair] = 0
         count2[pair] += 1
 
         count3[pair][pred_label[i]] += 1

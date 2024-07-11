@@ -1,5 +1,6 @@
 import numpy as np
 def labeling(scores):
+    scores =  np.round(scores).astype(int)
     label = []
     for score in scores:
         if score < 580:

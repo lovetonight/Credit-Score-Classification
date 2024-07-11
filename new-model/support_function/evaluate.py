@@ -1,85 +1,98 @@
 import numpy as np
+from collections import defaultdict
 
-
-def new_accuracy(y_train, second_y_train, y_pred):
-    y_train = np.array(y_train)
-    second_y_train = np.array(second_y_train)
-    y_pred = np.array(y_pred)
-    main_label_count = np.sum(y_pred == y_train)
-    condition = np.logical_or(y_pred == second_y_train, y_pred == y_train)
+def new_accuracy(first_label, second_label, y_pred):
+    condition = np.logical_or(y_pred == first_label, y_pred == second_label)
     count = np.sum(condition)
-    accuracy = count / len(y_train)
-    return accuracy, main_label_count, count - main_label_count
+    accuracy = count / len(first_label)
+    return accuracy
 
 
-## Custom F-score
-def precision_recall(first_label, second_label, predicted_labels, average="weighted"):
-    pair_label = set()
+# Custom F-score
+def precision_recall(first_label, second_label, predicted_labels):
+    count3 = defaultdict(
+        lambda: defaultdict(int)
+    )  # key: pair_label, value: {key: unique label, value: number of label}
+
+    # Xác định các cặp label
+
     for i in range(len(first_label)):
         pair = (
             min(first_label[i], second_label[i]),
             max(first_label[i], second_label[i]),
         )
-        pair_label.add(pair)
-    # Initialize counters for each class
-    TP = {cls: 0 for cls in pair_label}
-    TN = {cls: 0 for cls in pair_label}
-    FP = {cls: 0 for cls in pair_label}
-    FN = {cls: 0 for cls in pair_label}
+        count3[pair][predicted_labels[i]] += 1
 
-    for true1, true2, pred in zip(first_label, second_label, predicted_labels):
-        tmp_pair = (min(true1, true2), max(true1, true2))
-        for cls in pair_label:
-            if tmp_pair == cls and pred in cls:  # True Positive (TP)
-                TP[cls] += 1
-            elif tmp_pair == cls and pred not in cls:  # False Negative (FN)
-                FN[cls] += 1
-            elif tmp_pair != cls and pred in cls:  # False Positive (FP)
-                FP[cls] += 1
-            elif tmp_pair != cls and pred not in cls:  # True Negative (TN)
-                TN[cls] += 1
+    count_TP = defaultdict(int)
+    count_FP = defaultdict(int)
+    count_FN = defaultdict(int)
+    count_total = defaultdict(int)
 
-    if average == "weighted":
-        precision_sum = 0
-        recall_sum = 0
-        weight_sum = 0
-        for cls in pair_label:
-            weight = TP[cls] + FN[cls]
-            weight_sum += weight
-            if TP[cls] + FP[cls] > 0:
-                precision_sum += (TP[cls] / (TP[cls] + FP[cls])) * weight
-            if TP[cls] + FN[cls] > 0:
-                recall_sum += (TP[cls] / (TP[cls] + FN[cls])) * weight
-        precision = precision_sum / weight_sum if weight_sum > 0 else 0
-        recall = recall_sum / weight_sum if weight_sum > 0 else 0
-    elif average == "micro":
-        TP_total = sum(TP.values())
-        FP_total = sum(FP.values())
-        FN_total = sum(FN.values())
-        precision = TP_total / (TP_total + FP_total) if (TP_total + FP_total) > 0 else 0
-        recall = TP_total / (TP_total + FN_total) if (TP_total + FN_total) > 0 else 0
-    elif average == "macro":
-        precision_sum = 0
-        recall_sum = 0
-        count = 0
-        for cls in pair_label:
-            if TP[cls] + FP[cls] > 0:
-                precision_sum += TP[cls] / (TP[cls] + FP[cls])
-                count += 1
-            if TP[cls] + FN[cls] > 0:
-                recall_sum += TP[cls] / (TP[cls] + FN[cls])
-        precision = precision_sum / count if count > 0 else 0
-        recall = recall_sum / count if count > 0 else 0
-    return precision, recall
+    for pair, value in count3.items():
+        for key, count in value.items():
+            if key in pair:
+                count_TP[key] += count
+            else:
+                count_FP[key] += count
+                count_FN[pair[0]] += count
+                if pair[0] != pair[1]:
+                    count_FN[pair[1]] += count
+            count_total[key] += count
+    precision = {}
+    recall = {}
+    f1 = {}
+    for label in count_TP.keys():
+        tp = count_TP[label]
+        fp = count_FP[label]
+        fn = count_FN[label]
 
+        if tp + fp > 0:
+            precision[label] = tp / (tp + fp)
+        else:
+            precision[label] = 0
 
-def new_f1_score(first_label, second_label, predicted_labels, average="weighted"):
-    precision, recall = precision_recall(
-        first_label, second_label, predicted_labels, average
-    )
-    f1_score = (
-        2 * (precision * recall) / (precision + recall)
-        if (precision + recall) > 0
+        if tp + fn > 0:
+            recall[label] = tp / (tp + fn)
+        else:
+            recall[label] = 0
+
+        if precision[label] + recall[label] > 0:
+            f1[label] = (
+                2
+                * (precision[label] * recall[label])
+                / (precision[label] + recall[label])
+            )
+        else:
+            f1[label] = 0
+    avg_precision = sum(precision.values()) / len(precision) if precision else 0
+    avg_recall = sum(recall.values()) / len(recall) if recall else 0
+    avg_f1 = sum(f1.values()) / len(f1) if f1 else 0
+
+    total_instances = sum(count_total.values())
+    weighted_precision = (
+        sum(precision[label] * count_total[label] for label in precision.keys())
+        / total_instances
+        if total_instances > 0
         else 0
     )
-    return f1_score
+    weighted_recall = (
+        sum(recall[label] * count_total[label] for label in recall.keys())
+        / total_instances
+        if total_instances > 0
+        else 0
+    )
+    weighted_f1 = (
+        sum(f1[label] * count_total[label] for label in f1.keys()) / total_instances
+        if total_instances > 0
+        else 0
+    )
+
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("Average Precision:", avg_precision)
+    print("Average Recall:", avg_recall)
+    print("Average F1 Score:", avg_f1)
+    print("Weighted Precision:", weighted_precision)
+    print("Weighted Recall:", weighted_recall)
+    print("Weighted F1 Score:", weighted_f1)
