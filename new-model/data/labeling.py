@@ -1,6 +1,6 @@
 import pandas as pd
 
-file_path = "all_data_10_5.csv"
+file_path = "Lending-Data-Ethereum.csv"
 df = pd.read_csv(file_path)
 
 
@@ -159,10 +159,9 @@ def add_label(df):
         ):
 
             df.loc[index, "1st_label"] = 0
-
             df.loc[index, "2nd_label"] = 1
 
-    df.to_csv("all_data_10_5[2][3].csv", index=False)
+    df.to_csv("Lending-Data-Ethereum-Labeled.csv", index=False)
 
 add_label(df)
 
